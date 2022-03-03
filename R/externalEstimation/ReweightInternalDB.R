@@ -1,15 +1,5 @@
-#
-# 
-# CODE UNDER DEVELOPMENT AND UNDER REVIEW PLEASE DO NOT DISTRIBUTE
-#
-#
-# TODO bring the function we have in Stroke to here
-# TODO Add documentation
-# TODO replace equality constraints by constraints on the norm of the difference between expectations
-# TODO check what happens when minw=0
-# TODO check all solver statuses
-#
 suppressWarnings(library(CVXR, warn.conflicts=FALSE))
+library(glue)
 
 
 #' Reweight an internal database to match the means of an external one. 
@@ -105,8 +95,10 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
   }
   problem <- Problem(objective, constraints = constr)
   result <- solve(problem)
-  if (result$status == 'solver_error') {
-    warning(glue('Solver error, returning NaNs, data size = {n} * {length(mu)}'))
+  # The status of the solution can be "optimal", "optimal_inaccurate", "infeasible", "infeasible_inaccurate", 
+  # "unbounded", "unbounded_inaccurate", or "solver_error"
+  if (result$status != 'optimal') {
+    warning(glue('non-optimal results, returning NaNs, data size = {n} * {length(mu)}'))
     w_hat <- rep(NaN, n)
   } else {
     w_hat <- result$getValue(w) * n
@@ -162,9 +154,8 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
     result <- solve(problem, constr = constr)
   }
   
-  
-  if (result$status == 'solver_error') {
-    warning(glue('Solver error, returning NaNs, data size = {n} * {length(mu)}'))
+  if (result$status != 'optimal') {
+    warning(glue('non-optimal results, returning NaNs, data size = {n} * {length(mu)}'))
     w_hat <- rep(NaN, n)
   } else {
     if (lambda==0) {
@@ -252,3 +243,34 @@ normalizeDataAndExpectations <- function(Z, mu, minSd) {
   return(list(Z=Z, mu=mu, muZ=muZ, sdZ=sdZ))
 }
 
+
+computeTable1LikeTransformation <- function(X, outcomeBalance, outcomeCol='Y') {
+  # Add squares of numeric features
+  is_numeric <- sapply(X, function(x) length(unique(x))>2)  # TODO - consider a more elegant way
+  for (s in names(is_numeric[is_numeric])) {
+    sNew <- paste(s, '_2', sep='')
+    X[[sNew]] <- (X[[s]]**2) 
+  }
+  # Convert binary variables to numeric 0-1
+  is_factor <- sapply(X, is.factor)
+  X[is_factor] <- sapply(X[is_factor], as.numeric)
+  X[is_factor] <- X[is_factor] - 1
+  # Add interactions with outcome
+  if (outcomeBalance) { 
+    Z = data.frame(row.names = row.names(X))
+    Z[[outcomeCol]] <- X[[outcomeCol]]
+    x_names <- names(X)
+    ext_x <- x_names[x_names != outcomeCol]
+    ext_x_y1 <- paste(ext_x, '_y1', sep="")
+    for (i in 1:length(ext_x)) {
+      Z[[ext_x_y1[i]]] <- X[[outcomeCol]] * X[[ext_x[i]]]
+    }
+    ext_x_y0 <- paste(ext_x, '_y0', sep="")
+    for (i in 1:length(ext_x)) {
+      Z[[ext_x_y0[i]]] <- (1-X[[outcomeCol]]) * X[[ext_x[i]]]
+    }
+  } else {
+    Z <- X
+  }
+  return (Z)
+}
