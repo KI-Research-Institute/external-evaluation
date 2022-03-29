@@ -135,21 +135,16 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
   m <- ncol(normalized$Z)
   n <- nrow(normalized$Z)
 
+  nu <- Variable(m+1)
+  C <- rbind(t(normalized$Z), matrix(1,1,n))
+  d <- c(normalized$mu, 1)
+  objective <- Maximize(-t(d) %*% nu - exp(-1) * sum_entries(exp(- t(C) %*% nu)))
   if (lambda==0) {
-    nu <- Variable(m+1)
-    C <- rbind(t(normalized$Z), matrix(1,1,n))
-    d <- c(normalized$mu, 1)
-    objective <- Maximize(-t(d) %*% nu - exp(-1) * sum_entries(exp(- t(C) %*% nu)))
     problem <- Problem(objective)
     result <- solve(problem)
   }
   else {
-    nu <- Variable(1)
-    lam <- Variable(2*m)
-    A <- rbind(t(normalized$Z), -t(normalized$Z))
-    b <- c(normalized$mu + lambda*abs(normalized$mu), -normalized$mu + lambda*abs(normalized$mu))
-    objective <- Maximize(-t(b) %*% lam - nu - exp(-1) * sum_entries(exp(-t(A) %*% lam -nu)))
-    constr <- lam >= 0
+    constr <- norm2(nu) <= 1/lambda
     problem <- Problem(objective)
     result <- solve(problem, constr = constr)
   }
@@ -158,24 +153,12 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
     warning(glue('non-optimal results, returning NaNs, data size = {n} * {length(mu)}'))
     w_hat <- rep(NaN, n)
   } else {
-    if (lambda==0) {
       nu_hat <- result$getValue(nu)
       cat('nu:', nu_hat[1], ',' , nu_hat[2],  ',' , nu_hat[3], ', ... ,', nu_hat[m],  ',',nu_hat[m+1], '\n')
       if (!any(is.na(nu_hat))) {
           w_hat <- exp(-1- t(C) %*% nu_hat) * n
       } else
         w_hat <- rep(NaN, n)
-    } else {
-      nu_hat <- result$getValue(nu)
-      lam_hat <- result$getValue(lam)
-      cat('nu:', nu_hat[1], '\n')
-      cat(
-        'lam_hat:', lam_hat[1], ',' , lam_hat[2],  ',' , lam_hat[3], ', ... ,', lam_hat[2*m-1],  ',',lam_hat[2*m], '\n')
-      if (!(any(is.na(lam_hat)) || is.na(nu_hat) ))
-        w_hat <- exp(-1 - t(A) %*% lam_hat - nu_hat) * n # Watch the signs
-      else
-        w_hat <- rep(NaN, n)
-    }
   }
   return(w_hat)
 }
