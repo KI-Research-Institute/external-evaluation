@@ -41,10 +41,11 @@ reweightByMeans <- function(
   else
     w_hat <- dualReweightByMeans(Z, mu, lambda, minSd, minW, verbose)
 
+  min_w <- min(w_hat)
+  mean_w <- mean(w_hat)
   if (verbose)
     cat(sprintf('mean(w) = %.2f (sd = %.2f, min = %.2g, max = %.2g)\n', 
-                mean(w_hat), sd(w_hat), min(w_hat), max(w_hat)))
-  min_w <- min(w_hat)
+                mean_w, sd(w_hat), min_w, max(w_hat)))
   if ((!is.na(min_w)) & (min_w < 0)) {
     warning("Trimming negative weights to zero")
     w_hat[w_hat<0] <- minW/n
@@ -139,15 +140,13 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
   C <- rbind(t(normalized$Z), matrix(1,1,n))
   d <- c(normalized$mu, 1)
   objective <- Maximize(-t(d) %*% nu - exp(-1) * sum_entries(exp(- t(C) %*% nu)))
-  if (lambda==0) {
+  if (lambda==0)
     problem <- Problem(objective)
-    result <- solve(problem)
-  }
   else {
-    constr <- norm2(nu) <= 1/lambda
-    problem <- Problem(objective)
-    result <- solve(problem, constr = constr)
+    constr <- list(norm2(nu[1:(m-1)]) <= (1/lambda))
+    problem <- Problem(objective, constr = constr)
   }
+  result <- solve(problem)
   
   if (result$status != 'optimal') {
     warning(glue('non-optimal results, returning NaNs, data size = {n} * {length(mu)}'))
@@ -157,8 +156,10 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
       cat('nu:', nu_hat[1], ',' , nu_hat[2],  ',' , nu_hat[3], ', ... ,', nu_hat[m],  ',',nu_hat[m+1], '\n')
       if (!any(is.na(nu_hat))) {
           w_hat <- exp(-1- t(C) %*% nu_hat) * n
-      } else
+      } else {
+        warning(glue('Optimization resulted in NaNs, data size = {n} * {length(mu)}'))
         w_hat <- rep(NaN, n)
+      }
   }
   return(w_hat)
 }
