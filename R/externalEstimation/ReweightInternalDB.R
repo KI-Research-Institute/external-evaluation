@@ -143,7 +143,7 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
   if (lambda==0)
     problem <- Problem(objective)
   else {
-    constr <- list(norm2(nu[1:(m-1)]) <= (1/lambda))
+    constr <- list(norm2(nu[1:m]) <= (1/lambda))
     problem <- Problem(objective, constr = constr)
   }
   result <- solve(problem)
