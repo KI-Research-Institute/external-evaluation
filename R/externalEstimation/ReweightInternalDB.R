@@ -139,7 +139,7 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
   nu <- Variable(m+1)
   C <- rbind(t(normalized$Z), matrix(1,1,n))
   d <- c(normalized$mu, 1)
-  objective <- Maximize(-t(d) %*% nu - exp(-1) * sum_entries(exp(- t(C) %*% nu)))
+  objective <- Minimize(t(d) %*% nu + exp(-1) * sum_entries(exp(- t(C) %*% nu)))
   if (lambda==0)
     problem <- Problem(objective)
   else {
