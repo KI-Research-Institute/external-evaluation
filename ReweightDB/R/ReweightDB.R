@@ -76,7 +76,10 @@ reweightByMeans <- function(
 primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distance, verbose) {
   normalized <- normalizeDataAndExpectations(Z, mu, minSd)
   n <- nrow(normalized$Z)
-  w <- Variable(n)
+  w <- Variable(n, 1)
+  
+  normalized$mu <- as.vector(normalized$mu)
+  normalized$Z <- as.matrix(normalized$Z)
 
   if (divergence == 'entropy')    fDivergence <- -mean(entr(w))
   else if (divergence == 'chi2')  fDivergence <- norm2(w-(1/n)) ** 2
@@ -96,7 +99,7 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
     constr <- list(w >= minW, sum(w) == 1, (t(normalized$Z) %*% w) == normalized$mu)
   }
   problem <- Problem(objective, constraints = constr)
-  result <- solve(problem)
+  result <- solve(problem, solver = "ECOS", verbose = TRUE)
   # The status of the solution can be "optimal", "optimal_inaccurate", "infeasible", "infeasible_inaccurate",
   # "unbounded", "unbounded_inaccurate", or "solver_error"
   if (result$status != 'optimal') {
@@ -105,7 +108,6 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
   } else {
     w_hat <- result$getValue(w) * n
   }
-
   return (w_hat)
 }
 

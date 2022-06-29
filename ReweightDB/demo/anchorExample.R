@@ -2,11 +2,12 @@ rm(list=ls())
 library(glmnet)
 library(pROC)
 library(WeightedROC)
+library(glue)
 
-# library(ReweightDB)
+library(ReweightDB)
 script_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
 setwd(script_dir)
-source('../R/ReweightDB.R')
+# source('../R/ReweightDB.R')
 
 # Optimization definitions
 divergence <- 'entropy'
@@ -40,7 +41,8 @@ muExt <- colMeans(dBalanceExt)
 
 # Reweight
 w <- reweightByMeans(
-  dBalanceInt, muExt, divergence = divergence, lambda = lambda, minW = minW, optimizationMethod=optimizationMethod)
+  dBalanceInt, muExt, divergence = divergence, lambda = lambda, minW = minW, optimizationMethod=optimizationMethod,
+  verbose = T)
 
 # Print results
 cat(glue('\nInternal AUC = {format(intAuc, digits=3)}'), '\n')
