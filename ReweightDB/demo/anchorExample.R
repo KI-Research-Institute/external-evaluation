@@ -3,20 +3,26 @@ library(glmnet)
 library(pROC)
 library(WeightedROC)
 
+# library(ReweightDB)
 script_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
 setwd(script_dir)
-library(ReweightDB)
+source('../R/ReweightDB.R')
 
 # Optimization definitions
 divergence <- 'entropy'
 lambda <- 1e-6
 minW <- 1e-6
-optimizationMethod <- 'dual'
+optimizationMethod <- 'primal'
 
+# Load datasets
+# load(file=system.file('data/internalTrain.RData', package = "ReweightDB"))
+# load(file=system.file('data/internalTest.RData', package = "ReweightDB"))
+# load(file=system.file('data/external.RData', package = "ReweightDB"))
 # Load datasets
 load(file="../data/internalTrain.RData")
 load(file="../data/internalTest.RData")
 load(file="../data/external.RData")
+
 
 # Train and predict in internal and external sets
 xFeatures <- colnames(dExt)[1:(ncol(dExt)-1)]
@@ -46,3 +52,4 @@ if (!any(is.na(w))) {
   cat(glue('Estimated AUC = {format(wauc, digits=3)}'),'\n')
 } else
   cat('Did not find a feasible solution\n')
+

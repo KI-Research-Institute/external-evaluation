@@ -37,7 +37,7 @@ databse.}
 A vector of weights
 }
 \description{
-This function recieves a data frame Z of an internal DB and a vector mu of
+This function receives a data frame Z of an internal DB and a vector mu of
 means from an external DBs. The elements of mu correspond to columns of Z.
 It returns a set of sample weights such that the weighted means of the
 columns of Z are as close as possible to the elements of mu while

@@ -1,4 +1,5 @@
-suppressWarnings(library(CVXR, warn.conflicts=FALSE))
+# suppressWarnings(library(CVXR, warn.conflicts=FALSE))
+library(CVXR)
 library(glue)
 
 
@@ -6,7 +7,7 @@ library(glue)
 #'
 #' @description
 #'
-#' This function recieves a data frame Z of an internal DB and a vector mu of
+#' This function receives a data frame Z of an internal DB and a vector mu of
 #' means from an external DBs. The elements of mu correspond to columns of Z.
 #' It returns a set of sample weights such that the weighted means of the
 #' columns of Z are as close as possible to the elements of mu while
@@ -205,7 +206,20 @@ maximizeWeightedObj <- function(X, b, loss, lambda=1, alpha=0, minSd=1e-4, minW=
 }
 
 
-
+#' Normalize data and expectations
+#'
+#' @description
+#'
+#' Normalize data and expectations. 
+#'
+#' @param z data frame
+#' @param mu vector of expectations
+#' @param minSd float value of minimum standard deviation. Columns with a smaller sd will be removed
+#'
+#' @return
+#' list
+#'
+#' @export
 normalizeDataAndExpectations <- function(Z, mu, minSd) {
   # Preprocess and filter columns with low variance
   muZ <- colMeans(Z)
@@ -228,6 +242,20 @@ normalizeDataAndExpectations <- function(Z, mu, minSd) {
 }
 
 
+#' Compute Table 1 like transformation
+#'
+#' @description
+#'
+#' Compute features and squared numeric feature multiplied by outcome and 1-outcome. 
+#'
+#' @param x data frame
+#' @param outcomeBalance boolean specifying if to use outcome in balancing
+#' @param outcomeCol string specifying the name of the outcome column
+#'
+#' @return
+#' A data frame
+#'
+#' @export
 computeTable1LikeTransformation <- function(X, outcomeBalance, outcomeCol='Y') {
   # Add squares of numeric features
   is_numeric <- sapply(X, function(x) length(unique(x))>2)  # TODO - consider a more elegant way
