@@ -6,9 +6,16 @@ library(glue)
 
 library(ReweightDB)
 
+# TODO move transformations to a different file
+# TODO Turn this test into vignette and tests
+# TODO Compare to other DB standards
+# TODO Synch with the other git
+# TODO Look at the standards of documentation and other packages
+# TODO Documentation in DESCRIPTION file
+
 # Optimization definitions
 divergence <- 'entropy'
-lambda <- 1e-6
+lambda <- 1e-2
 minW <- 1e-6
 optimizationMethod <- 'dual'
 

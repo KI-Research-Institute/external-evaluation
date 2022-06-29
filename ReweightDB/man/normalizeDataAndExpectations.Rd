@@ -7,11 +7,11 @@
 normalizeDataAndExpectations(Z, mu, minSd)
 }
 \arguments{
+\item{Z}{data frame}
+
 \item{mu}{vector of expectations}
 
 \item{minSd}{float value of minimum standard deviation. Columns with a smaller sd will be removed}
-
-\item{z}{data frame}
 }
 \value{
 list

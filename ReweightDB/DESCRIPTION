@@ -1,5 +1,5 @@
 Package: ReweightDB
-Title: What the Package Does (One Line, Title Case)
+Title: Reweight an Internal Database to Match the Means of an External One
 Version: 0.0.0.9000
 Authors@R: 
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
@@ -10,5 +10,5 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Imports: 
-    CVXR (>= 1.0.10),
+    CVXR,
     glue
