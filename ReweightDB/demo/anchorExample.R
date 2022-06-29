@@ -4,27 +4,28 @@ library(pROC)
 library(WeightedROC)
 
 script_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
-source(file.path(script_dir,'../externalEstimation/ReweightInternalDB.R'))
+setwd(script_dir)
+library(ReweightDB)
 
 # Optimization definitions
 divergence <- 'entropy'
 lambda <- 1e-6
 minW <- 1e-6
-optimizationMethod <- 'primal'
+optimizationMethod <- 'dual'
 
 # Load datasets
-load(file = file.path(script_dir, "exampleData/internalTrain.RData"))
-load(file = file.path(script_dir, "exampleData/internalTest.RData"))
-load(file = file.path(script_dir, "exampleData/external.RData"))
+load(file="../data/internalTrain.RData")
+load(file="../data/internalTest.RData")
+load(file="../data/external.RData")
 
 # Train and predict in internal and external sets
 xFeatures <- colnames(dExt)[1:(ncol(dExt)-1)]
-m <- cv.glmnet(sapply(dIntTrain[xFeatures], as.numeric), dIntTrain[['Y']], 
+m <- cv.glmnet(sapply(dIntTrain[xFeatures], as.numeric), dIntTrain[['Y']],
                family = "binomial", type.measure = "auc", alpha = 0.5)
 p1 <- predict(m, sapply(dIntTest[xFeatures], as.numeric), type = "response", s = "lambda.1se")[,1]
-intAuc <- auc(roc(dIntTest[['Y']], p1, quiet = TRUE))
+intAuc <- auc(roc(dIntTest[['Y']], p1, quiet = TRUE, direction='<'))
 p2 <- predict(m, sapply(dExt[xFeatures], as.numeric), type = "response", s = "lambda.1se")[,1]
-extAuc <- auc(roc(dExt[['Y']], p2, quiet = TRUE))
+extAuc <- auc(roc(dExt[['Y']], p2, quiet = TRUE, direction='<'))
 
 # Compute interactions between features and outcomes and squared features
 dBalanceInt <- computeTable1LikeTransformation(dIntTest, outcomeBalance=TRUE)

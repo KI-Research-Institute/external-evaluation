@@ -2,29 +2,29 @@ suppressWarnings(library(CVXR, warn.conflicts=FALSE))
 library(glue)
 
 
-#' Reweight an internal database to match the means of an external one. 
+#' Reweight an internal database to match the means of an external one.
 #'
 #' @description
 #'
-#' This function recieves a data frame Z of an internal DB and a vector mu of 
-#' means from an external DBs. The elements of mu correspond to columns of Z. 
-#' It returns a set of sample weights such that the weighted means of the 
-#' columns of Z are as close as possible to the elements of mu while 
-#' minimizing the divergence between the distribution of the weights and the 
+#' This function recieves a data frame Z of an internal DB and a vector mu of
+#' means from an external DBs. The elements of mu correspond to columns of Z.
+#' It returns a set of sample weights such that the weighted means of the
+#' columns of Z are as close as possible to the elements of mu while
+#' minimizing the divergence between the distribution of the weights and the
 #' uniform distribution.
-#' 
-#' @param Z a data frame where every row stores a sample of the internal 
+#'
+#' @param Z a data frame where every row stores a sample of the internal
 #' databse.
 #' @param mu a vector of means of the external dataset.
-#' @param divergence 'entropy' or 'chi2'. 
-#' 'entropy' directs the algorithm to minimize the negative entropy, 
-#' -\sum_i w_i \log w_i.
-#' 'chi2' is \sum_i{w_i-\frac{1}{n}}**2
+#' @param divergence 'entropy' or 'chi2'.
+#' 'entropy' directs the algorithm to minimize the negative entropy,
+#' \eqn{-\sum_i w_i \log w_i}.
+#' 'chi2' is \eqn{\sum_i{w_i-\frac{1}{n}}**2}
 #' @param lambda lambda - regularization parameter
 #' @param minSd minimum variance for a columns to be included
-#' 
-#' 
-#' @param optimizationMethod primal or dual. Currently dual works only with entropy divergence 
+#'
+#'
+#' @param optimizationMethod primal or dual. Currently dual works only with entropy divergence
 #'
 #' @return
 #' A vector of weights
@@ -35,7 +35,7 @@ reweightByMeans <- function(
   verbose=FALSE) {
   # TODO in the regularized case, hyper param may depend on the number of features/samples
   # Find optimal weights
-  
+
   if (optimizationMethod == 'primal')
     w_hat <- primalReweightByMeans(Z, mu, divergence, lambda, minSd, minW, distance, verbose)
   else
@@ -44,7 +44,7 @@ reweightByMeans <- function(
   min_w <- min(w_hat)
   mean_w <- mean(w_hat)
   if (verbose)
-    cat(sprintf('mean(w) = %.2f (sd = %.2f, min = %.2g, max = %.2g)\n', 
+    cat(sprintf('mean(w) = %.2f (sd = %.2f, min = %.2g, max = %.2g)\n',
                 mean_w, sd(w_hat), min_w, max(w_hat)))
   if ((!is.na(min_w)) & (min_w < 0)) {
     warning("Trimming negative weights to zero")
@@ -54,18 +54,18 @@ reweightByMeans <- function(
 }
 
 
-#' Reweight an internal database to match the means of an external via solving a corresponding optimization problem. 
+#' Reweight an internal database to match the means of an external via solving a corresponding optimization problem.
 #'
 #' @description
 #'
-#' This function recieves a data frame Z of an internal DB and a vector mu of 
-#' means from an external DBs. The elements of mu correspond to columns of Z. 
-#' It returns a set of sample weights such that the weighted means of the 
-#' columns of Z are as close as possible to the elements of mu while 
-#' minimizing the divergence between the distribution of the weights and the 
+#' This function recieves a data frame Z of an internal DB and a vector mu of
+#' means from an external DBs. The elements of mu correspond to columns of Z.
+#' It returns a set of sample weights such that the weighted means of the
+#' columns of Z are as close as possible to the elements of mu while
+#' minimizing the divergence between the distribution of the weights and the
 #' uniform distribution.
-#' 
-#' 
+#'
+#'
 #' SEE THE PARENT FUNCTION
 #'
 #' @return
@@ -76,15 +76,15 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
   normalized <- normalizeDataAndExpectations(Z, mu, minSd)
   n <- nrow(normalized$Z)
   w <- Variable(n)
-  
+
   if (divergence == 'entropy')    fDivergence <- -mean(entr(w))
-  else if (divergence == 'chi2')  fDivergence <- norm2(w-(1/n)) ** 2 
+  else if (divergence == 'chi2')  fDivergence <- norm2(w-(1/n)) ** 2
   else                            stop(glue("unsuported divergence type {divergence}"))
-  
+
   if (distance == 'l2')       expectationsDistance <- norm2(t(normalized$Z) %*% w - normalized$mu)
   else if (distance == 'l1')  expectationsDistance <- norm1(t(normalized$Z) %*% w - normalized$mu)
   else                        stop(glue("unsuported distance type {distance}"))
-  
+
   if (lambda > 0) {
     if (verbose) cat(glue('Reweighting using {divergence}, {distance}, lambda = {lambda}, minW = {minW}'), '\n')
     objective <- Minimize(expectationsDistance + lambda*fDivergence)
@@ -96,7 +96,7 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
   }
   problem <- Problem(objective, constraints = constr)
   result <- solve(problem)
-  # The status of the solution can be "optimal", "optimal_inaccurate", "infeasible", "infeasible_inaccurate", 
+  # The status of the solution can be "optimal", "optimal_inaccurate", "infeasible", "infeasible_inaccurate",
   # "unbounded", "unbounded_inaccurate", or "solver_error"
   if (result$status != 'optimal') {
     warning(glue('non-optimal results, returning NaNs, data size = {n} * {length(mu)}'))
@@ -104,7 +104,7 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
   } else {
     w_hat <- result$getValue(w) * n
   }
-  
+
   return (w_hat)
 }
 
@@ -114,14 +114,14 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
 #'
 #' @description
 #'
-#' This function recieves a data frame Z of an internal DB and a vector mu of 
-#' means from an external DBs. The elements of mu correspond to columns of Z. 
-#' It returns a set of sample weights such that the weighted means of the 
-#' columns of Z are as close as possible to the elements of mu while 
-#' minimizing the divergence between the distribution of the weights and the 
+#' This function recieves a data frame Z of an internal DB and a vector mu of
+#' means from an external DBs. The elements of mu correspond to columns of Z.
+#' It returns a set of sample weights such that the weighted means of the
+#' columns of Z are as close as possible to the elements of mu while
+#' minimizing the divergence between the distribution of the weights and the
 #' uniform distribution.
-#' 
-#' @param Z a data frame where every row stores a sample of the internal 
+#'
+#' @param Z a data frame where every row stores a sample of the internal
 #' databse.
 #' @param mu a vector of means of the internal dataset.
 #' @param lambda lambda - regularization parameter
@@ -147,7 +147,7 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
     problem <- Problem(objective, constr = constr)
   }
   result <- solve(problem)
-  
+
   if (result$status != 'optimal') {
     warning(glue('non-optimal results, returning NaNs, data size = {n} * {length(mu)}'))
     w_hat <- rep(NaN, n)
@@ -165,7 +165,7 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
 }
 
 
-maximizeWeightedObj <- function(X, b, loss, lambda=1, alpha=0, minSd=1e-4, minW=1e-6, verbose=FALSE) {  
+maximizeWeightedObj <- function(X, b, loss, lambda=1, alpha=0, minSd=1e-4, minW=1e-6, verbose=FALSE) {
   # TODO - check correct usage of normalized expectations
   # TODO set a hyper param that depends on the number of features
   # Find optimal weights
@@ -179,7 +179,7 @@ maximizeWeightedObj <- function(X, b, loss, lambda=1, alpha=0, minSd=1e-4, minW=
     objective <- Maximize( (t(loss) %*% w) + lambda * sum(entr(w)) - alpha * norm2((t(normalized$Z) %*% w) - normalized$mu) )
     constr <- list(w >= 0, sum(w) == 1)
   }
-  
+
   problem <- Problem(objective, constraints = constr)
   result <- solve(problem)
   if (result$status == 'solver_error') {
@@ -190,9 +190,9 @@ maximizeWeightedObj <- function(X, b, loss, lambda=1, alpha=0, minSd=1e-4, minW=
   }
   if (verbose)
     cat(sprintf(
-      'mean(w) = %.2f (sd = %.2f, min = %.2g, max = %.2g, n=%d)\n', 
+      'mean(w) = %.2f (sd = %.2f, min = %.2g, max = %.2g, n=%d)\n',
       mean(w_hat), sd(w_hat), min(w_hat), max(w_hat), length(w_hat)))
-  min_w <- min(w_hat) 
+  min_w <- min(w_hat)
   if (is.na(min_w)) {
     warning(sprintf("Could not solve optimization problem, n = %d, q = %d", n, ncol(normalized$Z)))
   } else {
@@ -223,7 +223,7 @@ normalizeDataAndExpectations <- function(Z, mu, minSd) {
   # Normalize
   p <- ncol(Z)
   for (i in 1:p) Z[,i] <- (Z[,i]-muZ[i])/sdZ[i]
-  mu <- (mu-muZ)/sdZ    
+  mu <- (mu-muZ)/sdZ
   return(list(Z=Z, mu=mu, muZ=muZ, sdZ=sdZ))
 }
 
@@ -233,14 +233,14 @@ computeTable1LikeTransformation <- function(X, outcomeBalance, outcomeCol='Y') {
   is_numeric <- sapply(X, function(x) length(unique(x))>2)  # TODO - consider a more elegant way
   for (s in names(is_numeric[is_numeric])) {
     sNew <- paste(s, '_2', sep='')
-    X[[sNew]] <- (X[[s]]**2) 
+    X[[sNew]] <- (X[[s]]**2)
   }
   # Convert binary variables to numeric 0-1
   is_factor <- sapply(X, is.factor)
   X[is_factor] <- sapply(X[is_factor], as.numeric)
   X[is_factor] <- X[is_factor] - 1
   # Add interactions with outcome
-  if (outcomeBalance) { 
+  if (outcomeBalance) {
     Z = data.frame(row.names = row.names(X))
     Z[[outcomeCol]] <- X[[outcomeCol]]
     x_names <- names(X)
