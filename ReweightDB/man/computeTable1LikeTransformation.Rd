@@ -7,11 +7,11 @@
 computeTable1LikeTransformation(X, outcomeBalance, outcomeCol = "Y")
 }
 \arguments{
+\item{X}{data frame}
+
 \item{outcomeBalance}{boolean specifying if to use outcome in balancing}
 
 \item{outcomeCol}{string specifying the name of the outcome column}
-
-\item{x}{data frame}
 }
 \value{
 A data frame
