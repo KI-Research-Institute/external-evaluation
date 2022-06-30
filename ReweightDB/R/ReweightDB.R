@@ -1,8 +1,6 @@
 # @file ReweightDB.R
 #
-# Copyright 2021 Observational Health Data Sciences and Informatics
-#
-# This file is part of PatientLevelPrediction
+# Copyright 2021 KI Research Institute
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -267,7 +265,7 @@ normalizeDataAndExpectations <- function(Z, mu, minSd) {
 }
 
 
-#' Compute Table 1 like transformation
+#' @title Compute Table 1 like transformation
 #'
 #' @description
 #'
