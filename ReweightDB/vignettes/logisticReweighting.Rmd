@@ -37,25 +37,31 @@ load(file=file.path(system.file('data', package = "ReweightDB"), 'model1.RData')
 ls()
 ```
 
-Predict the label probabilities in the internal test set and the external set
+## Prediction in internal dataset
+Predict the label probabilities in the internal test set
 ```{r}
 xFeatures <- colnames(dExt)[1:(ncol(dExt)-1)]
-p1 <- predict(model1, sapply(dIntTest[xFeatures], as.numeric), type = "response", s = "lambda.1se")[,1]
-intAuc <- auc(roc(dIntTest[['Y']], p1, quiet = TRUE, direction='<'))
-p2 <- predict(model1, sapply(dExt[xFeatures], as.numeric), type = "response", s = "lambda.1se")[,1]
-extAuc <- auc(roc(dExt[['Y']], p2, quiet = TRUE, direction='<'))
+pInternal <- predict(model1, sapply(dIntTest[xFeatures], as.numeric), type = "response", s = "lambda.1se")[,1]
+intAuc <- auc(roc(dIntTest[['Y']], pInternal, quiet = TRUE, direction='<'))
 cat(glue('\nInternal AUC = {format(intAuc, digits=3)}'), '\n')
-cat(glue('\nExternal AUC = {format(extAuc, digits=3)}'), '\n')
 ```
 
-Compute interactions between features and outcomes and squared features. Summarize the statisitcs:
+## Estimation using reweighting
+First we should compute features that are used for reweighting. 
+Specifically, we compute interactions between features and outcomes and squared features. These features allow to 
+to compare and re-weight means and variances of every feature in every label group. The features of the external
+set are averaged. The re-weighting algorithm will use the means of the external features and the entire internal
+features matrix.
 ```{r}
 dBalanceInt <- computeTable1LikeTransformation(dIntTest, outcomeBalance=TRUE)
 dBalanceExt <- computeTable1LikeTransformation(dExt, outcomeBalance=TRUE)
 muExt <- colMeans(dBalanceExt)
 ```
 
-Before we re-weight, we should define parameters of the algorithms:
+Before we re-weight, we should define parameters of the algorithms. The `divergence` parameter defines the type of
+divergence between the weighted distribution and the uniform distribution. `lambda` controls the tradeoff between
+matching accuracy and closeness to the uniform distribution. 'minW' is the minimum allowed weight. `optimizationMethod`
+can be `'dual'` or `'primal'`:
 ```{r}
 divergence <- 'entropy'
 lambda <- 1e-2
@@ -70,13 +76,19 @@ w <- reweightByMeans(
   verbose = T)
 ```
 
-Print the results, compare the the actual AUCs in the block above
+Using the weights we compute the enropy and the weighted AUC:
 ```{r}
-if (!any(is.na(w))) {
-  p <- w/length(w)
-  cat(glue('Weight entropy = {format(- t(p) %*% log(p), digits=3)}'),'\n')
-  wauc <- WeightedAUC(WeightedROC(p1, dIntTest[['Y']], w))
-  cat(glue('Estimated AUC = {format(wauc, digits=3)}'),'\n')
-} else
-  cat('Did not find a feasible solution\n')
+p <- w/length(w)  # normalize for entropy computation
+cat(glue('Weight entropy = {format(- t(p) %*% log(p), digits=3)}'),'\n')
+wauc <- WeightedAUC(WeightedROC(pInternal, dIntTest[['Y']], w))
+cat(glue('Estimated AUC = {format(wauc, digits=3)}'),'\n')
+```
+The entropy is a measure of the distance between the original and reweighted distributions.
+
+## Comparisson to external set
+Compare to real performance in the test set
+```{r}
+pExternal <- predict(model1, sapply(dExt[xFeatures], as.numeric), type = "response", s = "lambda.1se")[,1]
+extAuc <- auc(roc(dExt[['Y']], pExternal, quiet = TRUE, direction='<'))
+cat(glue('\nExternal AUC = {format(extAuc, digits=3)}'), '\n')
 ```
