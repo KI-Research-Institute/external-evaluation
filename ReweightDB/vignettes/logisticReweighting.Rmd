@@ -1,51 +1,77 @@
-rm(list=ls())
+---
+title: "Reweighting example with a logisitic model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{logisticReweighting}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This example demonstrates re-weighting of a pre-trained logistic regression model to evalute external performence
+using an internal test set and statistics from the external set.
+
+## Setup
+First we import the libraries
+```{r setup}
+library(ReweightDB)
+
 library(glmnet)
 library(pROC)
 library(WeightedROC)
 library(glue)
 
-library(ReweightDB)
-
-# TODO move transformations to a different file
-# TODO Turn this test into vignette and tests
-# TODO Compare to other DB standards
-# TODO Synch with the other git
-# TODO Look at the standards of documentation and other packages
-# TODO Documentation in DESCRIPTION file
-
-# Optimization definitions
-divergence <- 'entropy'
-lambda <- 1e-2
-minW <- 1e-6
-optimizationMethod <- 'dual'
-
-# Load data and model objects
+```
+Next we load data and model objects: 
+```{r}
 load(file=system.file('data/internalTrain.RData', package = "ReweightDB"))
 load(file=system.file('data/internalTest.RData', package = "ReweightDB"))
 load(file=system.file('data/external.RData', package = "ReweightDB"))  # External data
 load(file=file.path(system.file('data', package = "ReweightDB"), 'model1.RData')) # model
+ls()
+```
 
-
-# Train and predict in internal and external sets
+Predict the label probabilities in the internal test set and the external set
+```{r}
 xFeatures <- colnames(dExt)[1:(ncol(dExt)-1)]
 p1 <- predict(model1, sapply(dIntTest[xFeatures], as.numeric), type = "response", s = "lambda.1se")[,1]
 intAuc <- auc(roc(dIntTest[['Y']], p1, quiet = TRUE, direction='<'))
 p2 <- predict(model1, sapply(dExt[xFeatures], as.numeric), type = "response", s = "lambda.1se")[,1]
 extAuc <- auc(roc(dExt[['Y']], p2, quiet = TRUE, direction='<'))
+cat(glue('\nInternal AUC = {format(intAuc, digits=3)}'), '\n')
+cat(glue('\nExternal AUC = {format(extAuc, digits=3)}'), '\n')
+```
 
-# Compute interactions between features and outcomes and squared features
+Compute interactions between features and outcomes and squared features. Summarize the statisitcs:
+```{r}
 dBalanceInt <- computeTable1LikeTransformation(dIntTest, outcomeBalance=TRUE)
 dBalanceExt <- computeTable1LikeTransformation(dExt, outcomeBalance=TRUE)
 muExt <- colMeans(dBalanceExt)
+```
 
-# Reweight
+Before we re-weight, we should define parameters of the algorithms:
+```{r}
+divergence <- 'entropy'
+lambda <- 1e-2
+minW <- 1e-6
+optimizationMethod <- 'dual'
+```
+
+Now we are ready to re-weight:
+```{r}
 w <- reweightByMeans(
   dBalanceInt, muExt, divergence = divergence, lambda = lambda, minW = minW, optimizationMethod=optimizationMethod,
   verbose = T)
+```
 
-# Print results
-cat(glue('\nInternal AUC = {format(intAuc, digits=3)}'), '\n')
-cat(glue('\nExternal AUC = {format(extAuc, digits=3)}'), '\n')
+Print the results, compare the the actual AUCs in the block above
+```{r}
 if (!any(is.na(w))) {
   p <- w/length(w)
   cat(glue('Weight entropy = {format(- t(p) %*% log(p), digits=3)}'),'\n')
@@ -53,3 +79,4 @@ if (!any(is.na(w))) {
   cat(glue('Estimated AUC = {format(wauc, digits=3)}'),'\n')
 } else
   cat('Did not find a feasible solution\n')
+```
