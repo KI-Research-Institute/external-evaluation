@@ -1,9 +1,32 @@
-# suppressWarnings(library(CVXR, warn.conflicts=FALSE))
-library(CVXR)
-library(glue)
+# @file ReweightDB.R
+#
+# Copyright 2021 KI Research Institute
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+#' ReweightDB
+#'
+#' @title Reweight an internal database to match the means of an external one.
+#'
+#' @description A package for reweighting a dataset to match the statistics of an external one
+#'
+#' @docType package
+#' @name ReweightDB
+#' @import CVXR
+#' @import glue
+NULL
 
-#' Reweight an internal database to match the means of an external one.
+#' @title Reweight an internal database to match the means of an external one.
 #'
 #' @description
 #'
@@ -72,12 +95,11 @@ reweightByMeans <- function(
 #' @return
 #' A vector of weights
 #'
-#' @export
 primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distance, verbose) {
   normalized <- normalizeDataAndExpectations(Z, mu, minSd)
   n <- nrow(normalized$Z)
   w <- Variable(n, 1)
-  
+
   normalized$mu <- as.vector(normalized$mu)
   normalized$Z <- as.matrix(normalized$Z)
 
@@ -133,7 +155,6 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
 #' @return
 #' A vector of weights
 #'
-#' @export
 dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
   normalized <- normalizeDataAndExpectations(X, mu, minSd)
   m <- ncol(normalized$Z)
@@ -156,7 +177,8 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
     w_hat <- rep(NaN, n)
   } else {
       nu_hat <- result$getValue(nu)
-      cat('nu:', nu_hat[1], ',' , nu_hat[2],  ',' , nu_hat[3], ', ... ,', nu_hat[m],  ',',nu_hat[m+1], '\n')
+      if (verbose)
+        cat('nu:', nu_hat[1], ',' , nu_hat[2],  ',' , nu_hat[3], ', ... ,', nu_hat[m],  ',',nu_hat[m+1], '\n')
       if (!any(is.na(nu_hat))) {
           w_hat <- exp(-1- t(C) %*% nu_hat) * n
       } else {
@@ -212,16 +234,15 @@ maximizeWeightedObj <- function(X, b, loss, lambda=1, alpha=0, minSd=1e-4, minW=
 #'
 #' @description
 #'
-#' Normalize data and expectations. 
+#' Normalize data and expectations.
 #'
-#' @param z data frame
+#' @param Z data frame
 #' @param mu vector of expectations
 #' @param minSd float value of minimum standard deviation. Columns with a smaller sd will be removed
 #'
 #' @return
 #' list
 #'
-#' @export
 normalizeDataAndExpectations <- function(Z, mu, minSd) {
   # Preprocess and filter columns with low variance
   muZ <- colMeans(Z)
@@ -244,13 +265,13 @@ normalizeDataAndExpectations <- function(Z, mu, minSd) {
 }
 
 
-#' Compute Table 1 like transformation
+#' @title Compute Table 1 like transformation
 #'
 #' @description
 #'
-#' Compute features and squared numeric feature multiplied by outcome and 1-outcome. 
+#' Compute features and squared numeric feature multiplied by outcome and 1-outcome.
 #'
-#' @param x data frame
+#' @param X data frame
 #' @param outcomeBalance boolean specifying if to use outcome in balancing
 #' @param outcomeCol string specifying the name of the outcome column
 #'
