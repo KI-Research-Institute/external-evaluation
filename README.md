@@ -13,5 +13,5 @@ devtools::install_github("KI-Research-Institute/external-evaluation/ReweightDB")
 
 ## Example
 
-Package examples are under development. For a preliminary example see [logisticReweighting.Rmd]
-(https://github.com/KI-Research-Institute/external-evaluation/blob/main/ReweightDB/vignettes/logisticReweighting.Rmd)
+Package examples are under development. For a preliminary example see 
+[logisticReweighting.Rmd](https://github.com/KI-Research-Institute/external-evaluation/blob/main/ReweightDB/vignettes/logisticReweighting.Rmd)
