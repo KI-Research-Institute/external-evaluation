@@ -1,4 +1,17 @@
 # expectation-evaluation
 Estimating model performance on external sample from their limited statistical characteristics.
 
-To run the example in R/example you will need the following libraries: glue, [CVXR](https://cran.r-project.org/web/packages/CVXR/readme/README.html), glmnet, pROC and WeightedROC.
+## Installation
+
+You can install the development version of ReweightDB from
+[GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("KI-Research-Institute/external-evaluation/ReweightDB")
+```
+
+## Example
+
+Package examples are under development. For a preliminary example see [logisticReweighting.Rmd]
+(https://github.com/KI-Research-Institute/external-evaluation/blob/main/ReweightDB/vignettes/logisticReweighting.Rmd)
