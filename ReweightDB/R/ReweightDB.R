@@ -82,7 +82,7 @@ reweightByMeans <- function(
 #'
 #' @description
 #'
-#' This function recieves a data frame Z of an internal DB and a vector mu of
+#' This function receives a data frame Z of an internal DB and a vector mu of
 #' means from an external DBs. The elements of mu correspond to columns of Z.
 #' It returns a set of sample weights such that the weighted means of the
 #' columns of Z are as close as possible to the elements of mu while
@@ -121,7 +121,7 @@ primalReweightByMeans <- function(Z, mu, divergence,lambda, minSd, minW, distanc
     constr <- list(w >= minW, sum(w) == 1, (t(normalized$Z) %*% w) == normalized$mu)
   }
   problem <- Problem(objective, constraints = constr)
-  result <- solve(problem, solver = "ECOS", verbose = TRUE)
+  result <- solve(problem, solver = "ECOS", verbose = FALSE)
   # The status of the solution can be "optimal", "optimal_inaccurate", "infeasible", "infeasible_inaccurate",
   # "unbounded", "unbounded_inaccurate", or "solver_error"
   if (result$status != 'optimal') {
