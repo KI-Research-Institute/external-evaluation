@@ -190,46 +190,6 @@ dualReweightByMeans <- function(X, mu, lambda, minSd, minW, verbose) {
 }
 
 
-maximizeWeightedObj <- function(X, b, loss, lambda=1, alpha=0, minSd=1e-4, minW=1e-6, verbose=FALSE) {
-  # TODO - check correct usage of normalized expectations
-  # TODO set a hyper param that depends on the number of features
-  # Find optimal weights
-  normalized <- normalizeDataAndExpectations(X, b, minSd)
-  n <- nrow(normalized$Z)
-  w <- Variable(n)
-  if (alpha==0) {
-    objective <- Maximize( (t(loss) %*% w) + lambda * sum(entr(w)) )
-    constr <- list(w >= 0, sum(w) == 1, (t(normalized$Z) %*% w) == normalized$mu)
-  } else {
-    objective <- Maximize( (t(loss) %*% w) + lambda * sum(entr(w)) - alpha * norm2((t(normalized$Z) %*% w) - normalized$mu) )
-    constr <- list(w >= 0, sum(w) == 1)
-  }
-
-  problem <- Problem(objective, constraints = constr)
-  result <- solve(problem)
-  if (result$status == 'solver_error') {
-    warning(glue('Solver error, returning NaNs, data size = {n} * {length(b)}'))
-    w_hat <- rep(NaN, n)
-  } else {
-    w_hat <- result$getValue(w) * n
-  }
-  if (verbose)
-    cat(sprintf(
-      'mean(w) = %.2f (sd = %.2f, min = %.2g, max = %.2g, n=%d)\n',
-      mean(w_hat), sd(w_hat), min(w_hat), max(w_hat), length(w_hat)))
-  min_w <- min(w_hat)
-  if (is.na(min_w)) {
-    warning(sprintf("Could not solve optimization problem, n = %d, q = %d", n, ncol(normalized$Z)))
-  } else {
-    if (min_w < 0) {
-      warning("Trimming negative weights to zero")
-      w_hat[w_hat<0] <- minW/n
-    }
-  }
-  return (w_hat)
-}
-
-
 #' Normalize data and expectations
 #'
 #' @description
